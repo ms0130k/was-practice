@@ -24,30 +24,13 @@ public class CustomWebApplicationServer {
             log.info("[CustomWebApplicationServer] waiting for client.");
 
             while ((clientSocket = serverSocket.accept()) != null) {
-                double result = 0;
                 log.info("[CustomWebApplicationServer] client connected");
 
                 /**
-                 * Step1 - 사용자 요청을 메인 Thread가 처리하도록 한다.
+                 * Step2 - 사용자 요청이 들어올 때마다 Thread를 새로 생성해서 처리한다.
                  */
-                try (InputStream in = clientSocket.getInputStream(); OutputStream os = clientSocket.getOutputStream(); BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                     DataOutputStream dos = new DataOutputStream(os);) {
+                new Thread(new ClientRequestHandler(clientSocket)).start();
 
-                    HttpRequest httpRequest = new HttpRequest(br);
-                    if (httpRequest.isGet() && httpRequest.matchPath("/calculate")) {
-                        QueryStrings queryStrings = httpRequest.getQeuryStrings();
-                        double operand1 = Double.parseDouble(queryStrings.getValue("operand1"));
-                        double operand2 = Double.parseDouble(queryStrings.getValue("operand2"));
-                        String operator = queryStrings.getValue("operator");
-                        result = Calculator.calculate(operand1, operand2, operator);
-                        byte[] body = String.valueOf(result).getBytes(StandardCharsets.UTF_8);
-
-                        HttpResponse httpResponse = new HttpResponse(dos);
-                        httpResponse.response200Header("application/json", body.length);
-                        httpResponse.responseBody(body);
-                    }
-                }
-                log.info("결과: {}", result);
             }
         }
     }
